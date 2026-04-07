@@ -1,0 +1,35 @@
+name: .NET Console CI-CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet restore ./MultimapImplementation.slnx
+      - run: dotnet build ./MultimapImplementation.slnx --configuration Release --no-restore
+      - run: dotnet test ./MultimapImplementation.slnx --configuration Release --no-build
+
+  publish:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet publish ./src/MultimapImplementation/MultimapImplementation.csproj -c Release -o ./publish
+      - uses: actions/upload-artifact@v4
+        with:
+          name: console-app
+          path: ./publish
